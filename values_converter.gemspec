@@ -5,7 +5,7 @@ require_relative 'lib/values_converter/version'
 Gem::Specification.new do |spec|
   spec.name = 'values_converter'
   spec.version = ValuesConverter::VERSION
-  spec.authors = ['Clice92']
+  spec.authors = ['Clicer92']
   spec.email = ['115153576+Clicer92@users.noreply.github.com']
 
   spec.summary = 'Converts one unit of mass, volume, and temperature to other units for recipes'
