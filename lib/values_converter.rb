@@ -4,5 +4,5 @@ require_relative 'values_converter/version'
 
 module ValuesConverter
   class Error < StandardError; end
-  # Your code goes here...
+  puts 'Hello World!'
 end
