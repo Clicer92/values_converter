@@ -1,0 +1,15 @@
+AllCops:
+  TargetRubyVersion: 3.2
+
+  Exclude:
+    - 'spec/*'
+
+  Metrics/MethodLength:
+    Max: 25
+  
+Layout/EndOfLine:
+  EnforcedStyle: lf
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
