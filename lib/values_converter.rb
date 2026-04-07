@@ -7,7 +7,7 @@ require_relative 'values_converter/error'
 
 # TODO
 module ValuesConverter
-  def self.convert_recipe(recipe_text, target_unit: 'г.') # rubocop:disable Metrics/MethodLength
+  def self.convert_recipe(recipe_text, target_unit: 'г.')
     lines = recipe_text.strip.split("\n")
     converted_lines = lines.map do |line|
       next line unless line.include?(' - ')

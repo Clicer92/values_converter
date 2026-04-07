@@ -1,39 +1,76 @@
 # ValuesConverter
 
-TODO: Delete this and the text below, and describe your gem
+ValuesConverter - гем для конвертации всех ингридиентов рецепта с доступными единицами измерения в желаемую.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/values_converter`. To experiment with that code, run `bin/console` for an interactive prompt.
+---
 
-## Installation
+## Установка
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+Гем опубликован только на GitHub, поэтому используйте локальную сборку.
 
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
-```
-
-If bundler is not being used to manage dependencies, install the gem by executing:
+1. Склонируйте репозиторий и перейдите в корень.
+2. Соберите гем:
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+gem build values_converter.gemspec
 ```
 
-## Usage
+3. Установите:
 
-TODO: Write usage instructions here
+```bash
+gem install values_converter
+```
 
-## Development
+---
 
-After checking out the repo, run `bin/setup` to install dependencies. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+## Использование
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+1. Подключаете гем
 
-## Contributing
+```ruby
+require 'values_converter'
+```
+2. Создаете рецепт
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/values_converter.
+```ruby
+# Так
+recipe =  'Мука пшеничная - 500 г.
+          Вода - 2 стакана
+          Яйцо куриное - 3 шт.
+          Соль - 0,5 ч. л.'          
+# Или так
+recipe_hash = [
+  { ingredient: 'Мука пшеничная', value: 500, unit: 'г.' },
+  { ingredient: 'Вода', value: 2, unit: 'стакана' },
+  { ingredient: 'Яйцо куриное', value: 3, unit: 'шт.' },
+  { ingredient: 'Соль', value: 0.5, unit: 'ч. л.' }
+]
 
-## License
+recipe = ValuesConverter.build_recipe(recipe_hash)
+```
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+3. Передаете методу 
+
+```ruby
+recipe_new = ValuesConverter.convert_recipe(recipe, 'г.')
+```
+
+4. Смотрите результат
+
+```ruby
+puts recipe_new
+```
+
+---
+
+## Тесты
+
+```bash
+bundle exec rspec
+```
+
+---
+
+## Лицензия
+
+Гем предоставляется по [MIT License](https://opensource.org/licenses/MIT).

@@ -4,11 +4,16 @@ AllCops:
   Exclude:
     - 'spec/*'
 
-  Metrics/MethodLength:
-    Max: 25
-  
 Layout/EndOfLine:
   EnforcedStyle: lf
+
+  
+Metrics/BlockLength:
+  Max: 25
+
+Metrics/MethodLength:
+  Max: 25
+
 
 Style/FrozenStringLiteralComment:
   Enabled: true
