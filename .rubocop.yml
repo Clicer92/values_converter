@@ -1,26 +1,33 @@
 require:
+  - rubocop-performance
   - rubocop-rspec
 
 AllCops:
-  
   NewCops: enable
 
+  SuggestExtensions: false
+  
   TargetRubyVersion: 3.2
 
   Exclude:
     - 'spec/*'
 
-Layout/EndOfLine:
-  EnforcedStyle: lf
-
-  
-Metrics/BlockLength:
-  Max: 25
+Metrics/AbcSize:
+  Max: 30
+  Exclude:
+    - 'spec/*'
 
 Metrics/MethodLength:
   Max: 25
 
+Metrics/BlockLength:
+  Max: 25
+  Exclude:
+    - 'spec/*'
+    - '*.gemspec'
+
+Layout/EndOfLine:
+  EnforcedStyle: lf
 
 Style/FrozenStringLiteralComment:
   Enabled: true
-  EnforcedStyle: always
