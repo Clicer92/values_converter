@@ -10,6 +10,8 @@ AllCops:
 
   Exclude:
     - 'spec/*'
+    
+  DisplayCopNames: true
 
 Metrics/AbcSize:
   Max: 30
@@ -18,6 +20,8 @@ Metrics/AbcSize:
 
 Metrics/MethodLength:
   Max: 25
+  Exclude:
+    - 'spec/*'
 
 Metrics/BlockLength:
   Max: 25
@@ -27,6 +31,9 @@ Metrics/BlockLength:
 
 Layout/EndOfLine:
   EnforcedStyle: lf
+
+Style/Documentation:
+  Enabled: false
 
 Style/FrozenStringLiteralComment:
   Enabled: true
