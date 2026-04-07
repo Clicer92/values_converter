@@ -35,6 +35,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'irb', '~> 1.17'
   spec.add_dependency 'rake', '~> 13.0'
   spec.add_dependency 'rspec', '~> 3.13'
-  spec.add_dependency 'rubocop', '~> 1.85'
+  spec.add_dependency 'rubocop', '~> 1.86'
+  spec.add_dependency 'rubocop-performance', '~> 1.16'
+  spec.add_dependency 'rubocop-rspec', '~> 1.16'
   spec.add_dependency 'ruby-lsp', '~> 0.26'
 end
