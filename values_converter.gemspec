@@ -15,6 +15,7 @@ Gem::Specification.new do |spec|
 
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = spec.homepage
+  spec.metadata['rubygems_mfa_required'] = 'true'
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -35,5 +36,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'rake', '~> 13.0'
   spec.add_dependency 'rspec', '~> 3.13'
   spec.add_dependency 'rubocop', '~> 1.85'
+  spec.add_dependency 'rubocop-rspec', '~> 3.9.0'
   spec.add_dependency 'ruby-lsp', '~> 0.26'
 end
