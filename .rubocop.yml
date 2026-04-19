@@ -10,6 +10,7 @@ AllCops:
 
   Exclude:
     - 'spec/*'
+    - 'vendor/**/*'
     
   DisplayCopNames: true
 
@@ -33,6 +34,9 @@ Layout/EndOfLine:
   EnforcedStyle: lf
 
 Style/Documentation:
+  Enabled: false
+
+Gemspec/DevelopmentDependencies:
   Enabled: false
 
 Style/FrozenStringLiteralComment:

@@ -30,13 +30,13 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
-  # Uncomment to register a new dependency of your gem
-  spec.add_dependency 'debug', '~> 1.11'
-  spec.add_dependency 'irb', '~> 1.17'
-  spec.add_dependency 'rake', '~> 13.0'
-  spec.add_dependency 'rspec', '~> 3.13'
-  spec.add_dependency 'rubocop', '~> 1.86'
-  spec.add_dependency 'rubocop-performance', '~> 1.16'
-  spec.add_dependency 'rubocop-rspec', '~> 1.16'
-  spec.add_dependency 'ruby-lsp', '~> 0.26'
+  # Development dependencies
+  spec.add_development_dependency 'debug', '~> 1.11'
+  spec.add_development_dependency 'irb', '~> 1.17'
+  spec.add_development_dependency 'rake', '~> 13.0'
+  spec.add_development_dependency 'rspec', '~> 3.13'
+  spec.add_development_dependency 'rubocop', '~> 1.86'
+  spec.add_development_dependency 'rubocop-performance', '~> 1.16'
+  spec.add_development_dependency 'rubocop-rspec', '~> 1.16'
+  spec.add_development_dependency 'ruby-lsp', '~> 0.26'
 end
