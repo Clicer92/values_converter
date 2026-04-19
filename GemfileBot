@@ -1,0 +1,5 @@
+source 'https://rubygems.org'
+
+gem 'vk-ruby'
+gem 'dotenv'
+gem 'values_converter', path: '../values_converter'
