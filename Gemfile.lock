@@ -2,14 +2,6 @@ PATH
   remote: .
   specs:
     values_converter (0.1.0)
-      debug (~> 1.11)
-      irb (~> 1.17)
-      rake (~> 13.0)
-      rspec (~> 3.13)
-      rubocop (~> 1.86)
-      rubocop-performance (~> 1.16)
-      rubocop-rspec (~> 1.16)
-      ruby-lsp (~> 0.26)
 
 GEM
   remote: https://rubygems.org/
@@ -104,6 +96,14 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  debug (~> 1.11)
+  irb (~> 1.17)
+  rake (~> 13.0)
+  rspec (~> 3.13)
+  rubocop (~> 1.86)
+  rubocop-performance (~> 1.16)
+  rubocop-rspec (~> 1.16)
+  ruby-lsp (~> 0.26)
   values_converter!
 
 BUNDLED WITH
