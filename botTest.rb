@@ -1,116 +1,207 @@
-
-
 require 'minitest/autorun'
+require_relative 'bot'
 
-class BotTest < Minitest::Test
+class TestVKRecipeBot < Minitest::Test
+  
+  def setup
+    @bot = VKRecipeBot.new
+  end
+  
   
   def test_convert_ml_to_g_flour
-    value = 250
-    from_unit = 'мл'
-    product = 'мука'
-    to_unit = 'г'
-    density = 0.6
-    
-    result = value * density
-    expected = 150.0
-    
-    assert_equal expected, result
-    puts "Test 1 passed: 250 мл мука = #{result} г"
+    result = @bot.convert_value(250, 'мл', 'мука', 'г')
+    assert_equal "250 мл мука = 150.0 г", result
   end
   
   def test_convert_g_to_ml_flour
-    value = 150
-    from_unit = 'г'
-    product = 'мука'
-    to_unit = 'мл'
-    density = 0.6
-    
-    result = value / density
-    expected = 250.0
-    
-    assert_equal expected, result
-    puts "Test 2 passed: 150 г мука = #{result} мл"
+    result = @bot.convert_value(150, 'г', 'мука', 'мл')
+    assert_equal "150 г мука = 250.0 мл", result
   end
   
   def test_convert_ml_to_g_milk
-    value = 200
-    density = 1.03
-    
-    result = value * density
-    expected = 206.0
-    
-    assert_equal expected, result
-    puts "Test 3 passed: 200 мл молоко = #{result} г"
+    result = @bot.convert_value(200, 'мл', 'молоко', 'г')
+    assert_equal "200 мл молоко = 206.0 г", result
   end
   
   def test_convert_ml_to_g_sugar
-    value = 100
-    density = 0.85
-    
-    result = value * density
-    expected = 85.0
-    
+    result = @bot.convert_value(100, 'мл', 'сахар', 'г')
+    assert_equal "100 мл сахар = 85.0 г", result
+  end
+  
+  def test_convert_g_to_ml_sugar
+    result = @bot.convert_value(85, 'г', 'сахар', 'мл')
+    assert_equal "85 г сахар = 100.0 мл", result
+  end
+  
+  def test_convert_cup_to_g_flour
+    result = @bot.convert_value(1, 'стакан', 'мука', 'г')
+    assert_equal "1 стакан мука = 150.0 г", result
+  end
+  
+  def test_convert_tsp_to_g_sugar
+    result = @bot.convert_value(2, 'ч.л.', 'сахар', 'г')
+    assert_equal "2 ч.л. сахар = 8.5 г", result
+  end
+  
+  def test_convert_tbsp_to_g_sugar
+    result = @bot.convert_value(1, 'ст.л.', 'сахар', 'г')
+    expected = "1 ст.л. сахар = 12.8 г"
     assert_equal expected, result
-    puts "Test 4 passed: 100 мл сахар = #{result} г"
   end
   
   def test_convert_kg_to_g
-    value = 1
-    result = value * 1000
-    expected = 1000
-    
-    assert_equal expected, result
-    puts "Test 5 passed: 1 кг = #{result} г"
+    result = @bot.convert_value(2, 'кг', '', 'г')
+    assert_equal "2 кг = 2000 г", result
   end
   
   def test_convert_g_to_kg
-    value = 1000
-    result = value / 1000.0
-    expected = 1.0
-    
-    assert_equal expected, result
-    puts "Test 6 passed: 1000 г = #{result} кг"
+    result = @bot.convert_value(500, 'г', '', 'кг')
+    assert_equal "500 г = 0.5 кг", result
   end
   
-  def test_flour_density
-    density = 0.6
-    assert_equal 0.6, density
-    puts "Test 7 passed: плотность муки = #{density}"
+  def test_convert_l_to_ml
+    result = @bot.convert_value(1, 'л', '', 'мл')
+    assert_equal "1 л = 1000 мл", result
   end
   
-  def test_milk_density
-    density = 1.03
-    assert_equal 1.03, density
-    puts "Test 8 passed: плотность молока = #{density}"
+  def test_convert_ml_to_l
+    result = @bot.convert_value(500, 'мл', '', 'л')
+    assert_equal "500 мл = 0.5 л", result
   end
   
-  def test_sugar_density
-    density = 0.85
-    assert_equal 0.85, density
-    puts "Test 9 passed: плотность сахара = #{density}"
+  def test_convert_cup_to_kg_flour
+    result = @bot.convert_value(1, 'стакан', 'мука', 'кг')
+    assert_equal "1 стакан мука = 0.15 кг", result
   end
+  
+  def test_convert_kg_to_cup_flour
+    result = @bot.convert_value(0.15, 'кг', 'мука', 'стакан')
+    assert_equal "0.15 кг мука = 1.0 стакан", result
+  end
+  
+  
+  def test_convert_invalid_unit
+    result = @bot.convert_value(100, 'xxx', 'мука', 'г')
+    assert_equal "Ошибка: не могу конвертировать xxx в г", result
+  end
+  
+  def test_convert_invalid_product
+    result = @bot.convert_value(250, 'мл', 'неизвестный', 'г')
+    assert_equal "250 мл неизвестный = 250.0 г", result
+  end
+  
+  
+  def test_convert_single_ingredient_recipe
+    recipe = "250 мл мука в г"
+    result = @bot.convert_recipe(recipe)
+    assert_includes result, "250 мл мука = 150.0 г"
+  end
+  
+  def test_convert_multiple_ingredients_recipe
+    recipe = "250 мл мука в г\n200 мл молоко в г"
+    result = @bot.convert_recipe(recipe)
+    assert_includes result, "250 мл мука = 150.0 г"
+    assert_includes result, "200 мл молоко = 206.0 г"
+  end
+  
+  
+  def test_initial_user_state
+    state = @bot.get_user_state(123456)
+    assert_equal 'idle', state[:step]
+    assert_empty state[:data]
+  end
+  
+  def test_set_user_state
+    @bot.set_user_state(123456, 'waiting_recipe', { product: 'мука' })
+    state = @bot.get_user_state(123456)
+    assert_equal 'waiting_recipe', state[:step]
+    assert_equal 'мука', state[:data][:product]
+  end
+  
+  def test_reset_user_state
+    @bot.set_user_state(123456, 'waiting_recipe', {})
+    @bot.set_user_state(123456, 'idle', {})
+    state = @bot.get_user_state(123456)
+    assert_equal 'idle', state[:step]
+  end
+  
   
   def test_start_command
-    command = '/start'
-    expected = 'start'
-    assert_equal 'start', command[1..-1]
-    puts "Test 10 passed: команда /start распознана"
+    result = @bot.process_message('/start', 123456)
+    assert_includes result, 'Что бы вы хотели конвертировать?'
   end
   
   def test_help_command
-    command = '/help'
-    expected = 'help'
-    assert_equal 'help', command[1..-1]
-    puts "Test 11 passed: команда /help распознана"
+    result = @bot.process_message('/help', 123456)
+    assert_includes result, 'Команды'
+    assert_includes result, '/start'
+    assert_includes result, '/help'
   end
   
-  def test_convert_format
-  message = '/convert 250 мл мука в г'
-  assert message.include?('/convert')
-  assert message.include?('в')
-  puts "Test 12 passed: формат сообщения правильный"
-end
-end
-
-
-Minitest.run
+  def test_products_command
+    result = @bot.process_message('/products', 123456)
+    assert_includes result, 'мука пшеничная'
+    assert_includes result, 'молоко'
+  end
+  
+  def test_units_command
+    result = @bot.process_message('/units', 123456)
+    assert_includes result, 'стакан'
+    assert_includes result, 'г'
+  end
+  
+  def test_state_command
+    @bot.set_user_state(123456, 'idle', {})
+    result = @bot.process_message('/state', 123456)
+    assert_includes result, 'idle'
+  end
+  
+  def test_reset_command
+    @bot.set_user_state(123456, 'waiting_recipe', {})
+    result = @bot.process_message('/reset', 123456)
+    assert_includes result, 'Состояние сброшено'
+    state = @bot.get_user_state(123456)
+    assert_equal 'idle', state[:step]
+  end
+  
+  def test_convert_recipe_command
+    result = @bot.process_message('/convert_recipe', 123456)
+    assert_includes result, 'Введите рецепт'
+  end
+  
+  def test_unknown_command
+    result = @bot.process_message('/unknown', 123456)
+    assert_includes result, 'Неизвестная команда'
+  end
+  
+  
+  def test_flour_density
+    density = @bot.get_density('мука')
+    assert_equal 0.6, density
+  end
+  
+  def test_milk_density
+    density = @bot.get_density('молоко')
+    assert_equal 1.03, density
+  end
+  
+  def test_sugar_density
+    density = @bot.get_density('сахар')
+    assert_equal 0.85, density
+  end
+  
+  def test_water_density
+    density = @bot.get_density('вода')
+    assert_equal 1.0, density
+  end
+  
+  def test_salt_density
+    density = @bot.get_density('соль')
+    assert_equal 1.2, density
+  end
+  
+  def test_unknown_product_density
+    density = @bot.get_density('неизвестный')
+    assert_equal 1.0, density
+  end
+end 
