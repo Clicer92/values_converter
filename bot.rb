@@ -12,6 +12,8 @@ class VKRecipeBot
     @server = nil
     @running = true
     @user_states = {}
+    @step_cou=0
+    @command = {}
     
     load_data_from_gem
     
@@ -75,10 +77,7 @@ class VKRecipeBot
     }
   end
   
-  def get_density(product)
-    product_key = product.downcase
-    @densities[product_key] || 1.0
-  end
+
   
   def get_unit_factor(unit, type)
     unit_key = unit.downcase
@@ -87,6 +86,15 @@ class VKRecipeBot
   
   
   def convert_with_gem(value, from_unit, product, to_unit)
+    @densities = {
+  'мука' => 0.6,
+  'мука пшеничная' => 0.6,
+  'вода' => 1.0,
+  'молоко' => 1.03,
+  'сахар' => 0.85,
+  'соль' => 1.2,
+  'разрыхлитель' => 0.9
+}
     begin
       parsed_item = {
         value: value,
@@ -168,7 +176,7 @@ class VKRecipeBot
         process_updates(updates) if updates
       rescue => e
         puts "Ошибка в основном цикле: #{e.message}"
-        sleep 5
+        sleep 10
         get_long_poll_server
       end
     end
@@ -180,6 +188,10 @@ class VKRecipeBot
   end
   
   def get_long_poll_server
+  max_retries = 3
+  retry_count = 0
+  
+  begin
     uri = URI("https://api.vk.com/method/messages.getLongPollServer")
     params = {
       access_token: @token,
@@ -201,11 +213,27 @@ class VKRecipeBot
       puts "Ошибка: #{data}"
       false
     end
+  rescue => e
+    puts "Ошибка get_long_poll_server: #{e.message}"
+    retry_count += 1
+    if retry_count <= max_retries
+      puts "Повторная попытка #{retry_count}/#{max_retries} через 5 сек..."
+      sleep 5
+      retry
+    else
+      puts "Не удалось получить сервер после #{max_retries} попыток"
+      false
+    end
   end
+end
   
-  def fetch_updates
-    return nil unless @server
-    
+ def fetch_updates
+  return nil unless @server
+  
+  max_retries = 3
+  retry_count = 0
+  
+  begin
     poll_uri = URI("https://#{@server['server']}")
     poll_params = {
       act: 'a_check',
@@ -223,31 +251,19 @@ class VKRecipeBot
     
     @server['ts'] = poll_data['ts'] if poll_data['ts']
     poll_data['updates']
+  rescue => e
+    puts "Ошибка fetch_updates: #{e.message}"
+    retry_count += 1
+    if retry_count <= max_retries
+      puts "Повторная попытка #{retry_count}/#{max_retries} через 5 сек..."
+      sleep 5
+      retry
+    else
+      puts "Не удалось получить обновления после #{max_retries} попыток"
+      nil
+    end
   end
-  
-  def send_message(user_id, text)
-    send_uri = URI("https://api.vk.com/method/messages.send")
-    send_params = {
-      access_token: @token,
-      user_id: user_id,
-      message: text,
-      random_id: rand(10**10),
-      v: '5.199'
-    }
-    send_uri.query = URI.encode_www_form(send_params)
-    
-    send_http = create_http(send_uri)
-    send_http.get(send_uri.request_uri, @headers)
-    puts "Ответ отправлен пользователю #{user_id}"
-  end
-  
-  def create_http(uri)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    http
-  end
-
+end
   def process_updates(updates)
     updates.each do |update|
       if update[0] == 4 && update[2] == 1
@@ -261,58 +277,49 @@ class VKRecipeBot
     end
   end
   
-  def process_message(message, user_id)
-    state = get_user_state(user_id)
-    cmd = message.strip
+  
+  def convert_recipe(recipe_text)
+  recipe_text = recipe_text.gsub("\r\n", "\n").gsub("\r", "\n")
+  lines = recipe_text.strip.split("\n")
+  
+  results = []
+  
+  lines.each_with_index do |line, index|
+    line = line.strip
+    next if line.empty?
     
-    case message
-    when '/start' then
-      set_user_state(user_id, 'idle', {})
-      return start_message
-    when '/help'then
-      set_user_state(user_id, 'idle', {})
-      return help_message
-    when '/state'then
-      return state_message(user_id)
-    when '/reset'then
-      set_user_state(user_id, 'idle', {})
-      return reset_message
-    when '/convert'then
-      set_user_state(user_id, 'waiting_recipe', {})
-      return msg_convert_recipe_prompt
-    when '/products'then
-      return products_list
-    when '/units'then
-      return units_list
-    end
-    
-    case state[:step]
-    when 'waiting_recipe'then set_user_state(user_id, 'idle', {})
-      return convert_recipe(cmd)
+    if line =~ /(\d+(?:\.\d+)?)\s+(\S+)\s+(\S+)\s+в\s+(\S+)/
+      value = $1.to_f
+      from_unit = $2
+      product = $3
+      to_unit = $4
+      result = convert_value(value, from_unit, product, to_unit)
+      results << "#{index + 1}. #{result}"
     else
-      if cmd =~ /\/convert\s+(\d+(?:\.\d+)?)\s+(\w+)\s+(\w+)\s+в\s+(\w+)/
-        return convert_with_gem($1.to_f, $2, $3, $4)
-      else
-        return unknown_message
-      end
+      results << "#{index + 1}. Ошибка: '#{line}'"
     end
   end
   
-  def convert(recipe_text)
-    if UNITS[:mass].include?(from_unit) && UNITS[:mass].include?(to_unit)
-      result = ValuesConverter::Mass.new(value, from_unit).to(to_unit)
-      "#{value} #{from_unit} = #{result.round(2)} #{to_unit}"
-    elsif UNITS[:volume].include?(from_unit) && UNITS[:volume].include?(to_unit)
-      result = ValuesConverter::Volume.new(value, from_unit).to(to_unit)
-      "#{value} #{from_unit} = #{result.round(2)} #{to_unit}"
-    elsif UNITS[:temperature].include?(from_unit) && UNITS[:temperature].include?(to_unit)
-      result = ValuesConverter::Temperature.new(value, from_unit).to(to_unit)
-      "#{value} #{from_unit} = #{result.round(2)} #{to_unit}"
-    else
-     result =  "Ошибка: неподдерживаемые единицы"
-    end
-    return result
+  if results.empty?
+    return "Не найден ни один ингредиент.\n\nПример:\n250 мл мука в г\n2 стакан вода в мл"
   end
+  
+  answer = "РЕЗУЛЬТАТ КОНВЕРТАЦИИ:\n\n"
+  answer += results.join("\n")
+  answer += "\n\nВсего ингредиентов: #{results.size}"
+  answer
+end
+def create_http(uri)
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true
+  http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+  http.open_timeout = 10   
+  http.read_timeout = 30  
+  http
+end
+def msg_start
+  "Бот конвертации продуктов.\nКоманды: /help, /products, /units, /convert_recipe, /state, /reset.\nПример: /convert 250 мл мука в г"
+end
   
   def get_user_state(user_id)
     @user_states[user_id] || { step: 'idle', data: {} }
@@ -375,49 +382,96 @@ class VKRecipeBot
     
   def get_density(product)
     product_key = product.downcase
-    @densities[product_key] || 1.0
+   if @densities[product_key] 
+    return @densities[product_key]
   end
+  @densities.each do |key,value|
+    return value if product_key.include?(key)||key.include?(product_key)
+  end 
+  1.0
+end
   def msg_start
     "Что бы вы хотели конвертировать?"
   end
   
-  def convert_to_ml(value, unit)
-    case unit.downcase
-    when 'мл' then value
-    when 'л' then value * 1000
-    when 'стакан', 'стакана' then value * 250
-    when 'ст.л.' then value * 15
-    when 'ч.л.' then value * 5
-    when 'чашка' then value * 240
-    when 'fl oz' then value * 29.57
-    else value
-    end
-  end
-  
-  def convert_to_gram(value, unit)
-    case unit.downcase
-    when 'г', 'г.' then value
-    when 'кг', 'кг.' then value * 1000
-    when 'oz' then value * 28.35
-    else value
-    end
-  end
   
   def convert_value(value, from_unit, product, to_unit)
-    density = get_density(product)
-    
-    if is_volume_unit?(from_unit) && is_mass_unit?(to_unit)
-      ml_value = convert_to_ml(value, from_unit)
-      result = ml_value * density
-      return result.round(1) 
-    elsif is_mass_unit?(from_unit) && is_volume_unit?(to_unit)
-      gram_value = convert_to_gram(value, from_unit)
-      result = gram_value / density
-      return  result.round(1) 
-    else
-      return  msg_convert_error(from_unit, to_unit) 
-    end
+  if from_unit == 'кг' && to_unit == 'г'
+    return "#{value} кг = #{value * 1000} г"
   end
+  
+  if from_unit == 'г' && to_unit == 'кг'
+    return "#{value} г = #{value / 1000.0} кг"
+  end
+  
+  if from_unit == 'л' && to_unit == 'мл'
+    return "#{value} л = #{value * 1000} мл"
+  end
+  
+  if from_unit == 'мл' && to_unit == 'л'
+    return "#{value} мл = #{value / 1000.0} л"
+  end
+  
+  density = get_density(product)
+  
+  volume_units = ['мл', 'л', 'стакан', 'стакана', 'ст.л.', 'ч.л.', 'чашка']
+  
+  if volume_units.include?(from_unit) && to_unit == 'г'
+    ml = value
+    case from_unit
+    when 'л' then ml = value * 1000
+    when 'стакан', 'стакана' then ml = value * 250
+    when 'ст.л.' then ml = value * 15
+    when 'ч.л.' then ml = value * 5
+    when 'чашка' then ml = value * 240
+    end
+    result = ml * density
+    return "#{value} #{from_unit} #{product} = #{result.round(1)} г"
+  end
+  
+  if volume_units.include?(from_unit) && to_unit == 'кг'
+    ml = value
+    case from_unit
+    when 'л' then ml = value * 1000
+    when 'стакан', 'стакана' then ml = value * 250
+    when 'ст.л.' then ml = value * 15
+    when 'ч.л.' then ml = value * 5
+    when 'чашка' then ml = value * 240
+    end
+    result = ml * density / 1000
+    return "#{value} #{from_unit} #{product} = #{result.round(2)} кг"
+  end
+  
+  if from_unit == 'г' && volume_units.include?(to_unit)
+    ml = value / density
+    case to_unit
+    when 'л' then result = ml / 1000
+    when 'стакан', 'стакана' then result = ml / 250
+    when 'ст.л.' then result = ml / 15
+    when 'ч.л.' then result = ml / 5
+    when 'чашка' then result = ml / 240
+    else result = ml
+    end
+    return "#{value} г #{product} = #{result.round(1)} #{to_unit}"
+  end
+  
+  if from_unit == 'кг' && volume_units.include?(to_unit)
+    gram = value * 1000
+    ml = gram / density
+    case to_unit
+    when 'л' then result = ml / 1000
+    when 'стакан', 'стакана' then result = ml / 250
+    when 'ст.л.' then result = ml / 15
+    when 'ч.л.' then result = ml / 5
+    when 'чашка' then result = ml / 240
+    else result = ml
+    end
+    return "#{value} кг #{product} = #{result.round(1)} #{to_unit}"
+  end
+  
+  return "Ошибка: не могу конвертировать #{from_unit} в #{to_unit}"
+end
+
   
   def is_volume_unit?(unit)
     @units[:volume].keys.any? { |u| u.downcase == unit.downcase } || ['мл', 'л'].include?(unit)
@@ -504,34 +558,36 @@ class VKRecipeBot
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     http
   end
-
-  
-  def process_updates(updates)
-    updates.each do |update|
-      if update[0] == 4 && update[2] == 1
-        message = update[5]
-        user_id = update[3]
-        puts "Сообщение: #{message}"
-        answer = process_message(message, user_id)
-        send_message(user_id, answer)
-      end
-    end
-  end
-  
+  def update_stats(cmd)
+  @step_counter ||= 0
+  @step_counter += 1
+  @commands_stats ||= {}
+  @commands_stats[cmd] = (@commands_stats[cmd] || 0) + 1
+end
   def process_message(message, user_id)
   cmd = message.strip
+  update_stats(cmd)
+    
+  state = get_user_state(user_id)
+  if cmd == '/reset'
+    set_user_state(user_id, 'idle', {})
+    return msg_reset
+  end
+  if state[:step] == 'waiting_recipe'
+    set_user_state(user_id, 'idle', {})
+    return convert_recipe(cmd)
+  end  
+  if cmd =='/convert_recipe'
+    set_user_state(user_id, 'waiting_recipe', {})
+    return msg_convert_recipe_prompt
+  end
   
-  if cmd.start_with?('/convert')
-    parts = cmd.split(' ')
-    if parts.length >= 6
-      value = parts[1].to_f
-      from_unit = parts[2]
-      product = parts[3]
-      to_unit = parts[5]
-      return convert_value(value, from_unit, product, to_unit)
-    else
-      return "Неверный формат. Пример: /convert 250 мл мука в г"
-    end
+  if cmd =~ /^\/convert\s+(\d+(?:\.\d+)?)\s+(\S+)\s+(\S+)\s+в\s+(\S+)/
+    value = $1.to_f
+    from_unit = $2
+    product = $3
+    to_unit = $4
+    return convert_value(value, from_unit, product, to_unit)
   end
   
   case cmd
@@ -540,9 +596,14 @@ class VKRecipeBot
   when '/help'
     return msg_help
   when '/products'
-    return products_list
+    return msg_products
   when '/units'
-    return units_list
+    return msg_units
+  when '/state'
+    return msg_state(state[:step], state[:data])
+  when cmd == '/reset'
+    set_user_state(user_id, 'idle', {})
+    return msg_reset
   else
     return msg_unknown
   end
